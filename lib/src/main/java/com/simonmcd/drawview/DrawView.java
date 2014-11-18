@@ -29,10 +29,16 @@ public class DrawView extends View {
     private static final String EXTRA_EVENT_LIST = "eventList";
     private static final String EXTRA_COLOUR_LIST = "colourList";
 
+    /**
+     * Drawing tools.
+     */
     private Path drawPath;
     private Paint drawPaint;
     private Paint canvasPaint;
 
+    /**
+     * Canvas elements.
+     */
     private Canvas drawCanvas;
     private Bitmap canvasBitmap;
 
@@ -42,13 +48,18 @@ public class DrawView extends View {
     private ArrayList<MotionEvent> eventList = new ArrayList<MotionEvent>();
     private ArrayList<Integer> colourList = new ArrayList<Integer>();
 
-    public DrawView(Context context, AttributeSet attrs){
-        super(context, attrs);
-        setSaveEnabled(true);
-        setupDrawing();
+    public DrawView(Context context) {
+        super(context);
+        init();
     }
 
-    private void setupDrawing() {
+    public DrawView(Context context, AttributeSet attrs){
+        super(context, attrs);
+        init();
+    }
+
+    private void init() {
+        setSaveEnabled(true);
         drawPath = new Path();
         drawPaint = new Paint();
         drawPaint.setColor(Color.BLACK);
@@ -63,12 +74,21 @@ public class DrawView extends View {
     @Override
     public void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
         super.onSizeChanged(width, height, oldWidth, oldHeight);
+
+        // Draw canvas.
         canvasBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         drawCanvas = new Canvas(canvasBitmap);
+
+        // Set background colour.
         final Paint backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.WHITE);
         backgroundPaint.setStyle(Paint.Style.FILL);
+
+        // Draw the background on the canvas.
         drawCanvas.drawRect(0, 0, width, height, backgroundPaint);
+
+        // If we have an existing eventList we have probably just rotated the screen and need to
+        // recreate the drawing.
         if (eventList != null) {
             final List<MotionEvent> tempEventList = new ArrayList<MotionEvent>();
             final List<Integer> tempColourList = new ArrayList<Integer>();
@@ -80,6 +100,8 @@ public class DrawView extends View {
             }
             eventList.clear();
             colourList.clear();
+
+            // Redraw any recorded strokes.
             for (int i = 0; i < size; i++) {
                 drawPaint.setColor(tempColourList.get(i));
                 onTouchEvent(tempEventList.get(i));
@@ -99,20 +121,28 @@ public class DrawView extends View {
         final float touchY = event.getY();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                // If the user has touched the screen set the start point of the path.
                 drawPath.moveTo(touchX, touchY);
                 break;
             case MotionEvent.ACTION_MOVE:
+                // If the user has moved their finger connect from the last point in the path.
                 drawPath.lineTo(touchX, touchY);
                 break;
             case MotionEvent.ACTION_UP:
+                // When the user has stopped touching the screen draw the path to the canvas and
+                // reset the path for the next touch event.
                 drawCanvas.drawPath(drawPath, drawPaint);
                 drawPath.reset();
                 break;
             default:
                 return false;
         }
+        // Record both the touch and the colour selected at the time of the touch for recreation
+        // if the View is destroyed.
         eventList.add(MotionEvent.obtain(event));
         colourList.add(drawPaint.getColor());
+
+        // Invalidate the View so it is redrawn.
         invalidate();
         return true;
     }
@@ -195,7 +225,7 @@ public class DrawView extends View {
             super.onRestoreInstanceState(bundle.getParcelable(EXTRA_STATE));
             eventList = bundle.getParcelableArrayList(EXTRA_EVENT_LIST);
             colourList = bundle.getIntegerArrayList(EXTRA_COLOUR_LIST);
-            setupDrawing();
+            init();
             if (eventList == null) {
                 eventList = new ArrayList<MotionEvent>();
             }
@@ -211,9 +241,14 @@ public class DrawView extends View {
      * Remove all paint from the canvas.
      */
     public void clear() {
+        // Clear the canvas.
         this.drawCanvas.drawColor(0, PorterDuff.Mode.CLEAR);
+
+        // Clear the lists so if the View is destroyed we do not recreate the cleared image.
         this.eventList.clear();
         this.colourList.clear();
+
+        // Invalidate the View so it is redrawn.
         invalidate();
     }
 }
