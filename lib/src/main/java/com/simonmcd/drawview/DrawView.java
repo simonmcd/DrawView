@@ -312,6 +312,11 @@ public class DrawView extends View {
         invalidate();
     }
 
+    /**
+     * Sets shake to clear mode. This feature uses the accelerometer to detect when the user
+     * shakes the device. If enabled, a device shake will clear the drawn Bitmap.
+     * @param enabled if true, shaking will clear the Bitmap. If false, shaking will not.
+     */
     public void enableShakeToClear(final boolean enabled) {
         if (sensorManager == null) {
             sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
@@ -325,10 +330,12 @@ public class DrawView extends View {
         }
     }
 
-    /* Store the acceleration values given by the sensor */
+    /**
+     * Store the acceleration values given by the sensor
+     * */
     private void updateAccelParameters(float xNewAccel, float yNewAccel,
                                        float zNewAccel) {
-                /* we have to suppress the first change of acceleration, it results from first values being initialized with 0 */
+        // Ignore first shake.
         if (firstUpdate) {
             xPreviousAccel = xNewAccel;
             yPreviousAccel = yNewAccel;
@@ -344,7 +351,10 @@ public class DrawView extends View {
         zAccel = zNewAccel;
     }
 
-    /* If the values of acceleration have changed on at least two axises, we are probably in a shake motion */
+    /**
+     * If the values of acceleration have changed on at least two axises,
+     * we are probably in a shake motion
+     * */
     private boolean isAccelerationChanged() {
         float deltaX = Math.abs(xPreviousAccel - xAccel);
         float deltaY = Math.abs(yPreviousAccel - yAccel);
