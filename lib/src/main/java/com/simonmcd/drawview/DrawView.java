@@ -1,6 +1,7 @@
 package com.simonmcd.drawview;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -56,6 +57,23 @@ public class DrawView extends View {
     public DrawView(Context context, AttributeSet attrs){
         super(context, attrs);
         init();
+        setupAttributes(attrs);
+    }
+
+    private void setupAttributes(AttributeSet attrs) {
+        TypedArray a = getContext().getTheme().obtainStyledAttributes(
+                attrs,
+                R.styleable.DrawView,
+                0, 0);
+
+        try {
+            final int colour = a.getColor(R.styleable.DrawView_brushColour, 0);
+            if (colour != 0) {
+                drawPaint.setColor(colour);
+            }
+        } finally {
+            a.recycle();
+        }
     }
 
     private void init() {
