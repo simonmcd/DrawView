@@ -1,9 +1,9 @@
 package com.simonmcd.drawview.example;
 
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.support.v7.app.ActionBarActivity;
+
+import com.simonmcd.drawview.DrawView;
 
 /**
  * An Activity for displaying the DrawView.
@@ -14,5 +14,7 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        final DrawView drawView = (DrawView) findViewById(R.id.draw_view);
+        drawView.enableShakeToClear(true);
     }
 }

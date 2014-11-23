@@ -5,6 +5,7 @@
     android:layout_height="match_parent" >
 
     <com.simonmcd.drawview.DrawView
+        android:id="@+id/draw_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         draw:brushColour="#FF0"/>

@@ -8,6 +8,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -44,10 +48,49 @@ public class DrawView extends View {
     private Bitmap canvasBitmap;
 
     /**
+     * Shake elements.
+     */
+    private boolean isShaking = false;
+    private float xAccel;
+    private float yAccel;
+    private float zAccel;
+
+    /* And here the previous ones */
+    private float xPreviousAccel;
+    private float yPreviousAccel;
+    private float zPreviousAccel;
+
+    /* Used to suppress the first shaking */
+    private boolean firstUpdate = true;
+
+    /*What acceleration difference would we assume as a rapid movement? */
+    private final static float SHAKE_THRESHOLD = 10f;
+
+    /**
      * Lists for holding data about the history of the drawing.
      */
     private ArrayList<MotionEvent> eventList = new ArrayList<MotionEvent>();
     private ArrayList<Integer> colourList = new ArrayList<Integer>();
+
+    private SensorManager sensorManager;
+
+    private final SensorEventListener sensorEventListener = new SensorEventListener() {
+
+        public void onSensorChanged(SensorEvent se) {
+            updateAccelParameters(se.values[0], se.values[1], se.values[2]);
+            if ((!isShaking) && isAccelerationChanged()) {
+                isShaking = true;
+            } else if ((isShaking) && isAccelerationChanged()) {
+                clear();
+            } else if ((isShaking) && (!isAccelerationChanged())) {
+                isShaking = false;
+            }
+        }
+
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+	    /* can be ignored in this example */
+        }
+    };
 
     public DrawView(Context context) {
         super(context);
@@ -243,7 +286,6 @@ public class DrawView extends View {
             super.onRestoreInstanceState(bundle.getParcelable(EXTRA_STATE));
             eventList = bundle.getParcelableArrayList(EXTRA_EVENT_LIST);
             colourList = bundle.getIntegerArrayList(EXTRA_COLOUR_LIST);
-            init();
             if (eventList == null) {
                 eventList = new ArrayList<MotionEvent>();
             }
@@ -268,5 +310,47 @@ public class DrawView extends View {
 
         // Invalidate the View so it is redrawn.
         invalidate();
+    }
+
+    public void enableShakeToClear(final boolean enabled) {
+        if (sensorManager == null) {
+            sensorManager = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
+        }
+        if (enabled) {
+            sensorManager.registerListener(sensorEventListener, sensorManager
+                            .getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                    SensorManager.SENSOR_DELAY_NORMAL);
+        } else {
+            sensorManager.unregisterListener(sensorEventListener);
+        }
+    }
+
+    /* Store the acceleration values given by the sensor */
+    private void updateAccelParameters(float xNewAccel, float yNewAccel,
+                                       float zNewAccel) {
+                /* we have to suppress the first change of acceleration, it results from first values being initialized with 0 */
+        if (firstUpdate) {
+            xPreviousAccel = xNewAccel;
+            yPreviousAccel = yNewAccel;
+            zPreviousAccel = zNewAccel;
+            firstUpdate = false;
+        } else {
+            xPreviousAccel = xAccel;
+            yPreviousAccel = yAccel;
+            zPreviousAccel = zAccel;
+        }
+        xAccel = xNewAccel;
+        yAccel = yNewAccel;
+        zAccel = zNewAccel;
+    }
+
+    /* If the values of acceleration have changed on at least two axises, we are probably in a shake motion */
+    private boolean isAccelerationChanged() {
+        float deltaX = Math.abs(xPreviousAccel - xAccel);
+        float deltaY = Math.abs(yPreviousAccel - yAccel);
+        float deltaZ = Math.abs(zPreviousAccel - zAccel);
+        return (deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD)
+                || (deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD)
+                || (deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD);
     }
 }
